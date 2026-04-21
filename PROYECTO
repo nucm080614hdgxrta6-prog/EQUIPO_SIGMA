@@ -1,1 +1,219 @@
-A
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="AVANCE.MainPage">
+    <ScrollView>
+        <VerticalStackLayout Padding="25" Spacing="20">
+
+            <Label Text="🥗 CONTADOR DE CALORÍAS"
+                   TextColor="White"
+                   FontSize="28"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   Margin="0,0,0,10" />
+
+            <Frame BackgroundColor="#16213E"
+                   CornerRadius="20"
+                   Padding="15"
+                   HasShadow="True">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Progreso diario"
+                           TextColor="#B0B0B0"
+                           FontSize="14"
+                           HorizontalOptions="Center" />
+
+                    <ProgressBar x:Name="ProgresoBar"
+                                 ProgressColor="#FFD93D"
+                                 ScaleY="3.5"
+                                 BackgroundColor="#2C3E50" />
+
+                    <Label x:Name="TextoProgresoLbl"
+                           TextColor="White"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           HorizontalOptions="Center" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <Button x:Name="AgregarBtn"
+                    Text="➕ Agregar comida (+20%)"
+                    BackgroundColor="#FFD93D"
+                    TextColor="#1A1A2E"
+                    CornerRadius="15"
+                    FontAttributes="Bold"
+                    HeightRequest="55"
+                    Clicked="OnAgregarComidaClicked" />
+
+            <Button x:Name="ReiniciarBtn"
+                    Text="🔄 Reiniciar día"
+                    BackgroundColor="#E94560"
+                    TextColor="White"
+                    CornerRadius="15"
+                    FontAttributes="Bold"
+                    HeightRequest="50"
+                    Clicked="OnReiniciarClicked" />
+
+            <BoxView HeightRequest="1" Color="#3A3A5A" />
+
+            <Label Text="📋 Historial de hoy"
+                   TextColor="White"
+                   FontSize="20"
+                   FontAttributes="Bold" />
+
+            <CollectionView x:Name="HistorialCollection"
+                            HeightRequest="300">
+                <CollectionView.EmptyView>
+                    <StackLayout Padding="20">
+                        <Label Text="🍽️ No hay comidas registradas aún"
+                               TextColor="#B0B0B0"
+                               FontSize="16"
+                               HorizontalOptions="Center" />
+                        <Label Text="Presiona 'Agregar comida' para empezar"
+                               TextColor="#888888"
+                               FontSize="14"
+                               HorizontalOptions="Center" />
+                    </StackLayout>
+                </CollectionView.EmptyView>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame BackgroundColor="#16213E"
+                               CornerRadius="12"
+                               Margin="0,5"
+                               Padding="12"
+                               HasShadow="False">
+                            <HorizontalStackLayout Spacing="12">
+                                <Label Text="🍴"
+                                       FontSize="24"
+                                       VerticalOptions="Center" />
+                                <VerticalStackLayout Spacing="3">
+                                    <Label Text="{Binding Nombre}"
+                                           TextColor="White"
+                                           FontSize="16"
+                                           FontAttributes="Bold" />
+                                    <Label Text="{Binding Hora}"
+                                           TextColor="#B0B0B0"
+                                           FontSize="12" />
+                                </VerticalStackLayout>
+                                <Label Text="{Binding AporteCalorico, StringFormat='+{0}%'}"
+                                       TextColor="#FFD93D"
+                                       FontSize="14"
+                                       FontAttributes="Bold"
+                                       HorizontalOptions="EndAndExpand"
+                                       VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Label x:Name="MensajeLbl"
+                   TextColor="#FFD93D"
+                   FontSize="14"
+                   FontAttributes="Italic"
+                   HorizontalOptions="Center"
+                   IsVisible="False" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
+
+
+CS
+using Microsoft.Maui.Controls.PlatformConfiguration.TizenSpecific;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
+namespace AVANCE;
+
+public partial class MainPage : ContentPage
+{
+    private float _progresoActual;
+    private ObservableCollection<RegistroComida> _historialComidas;
+
+    public MainPage()
+    {
+        InitializeComponent();
+        InicializarApp();
+    }
+
+    private void InicializarApp()
+    {
+        _progresoActual = 0f;
+        _historialComidas = new ObservableCollection<RegistroComida>();
+
+        // Configurar el progreso inicial
+        ProgresoBar.Progress = 0f;
+        TextoProgresoLbl.Text = "0% completado";
+
+        // Vincular el historial al CollectionView
+        HistorialCollection.ItemsSource = _historialComidas;
+    }
+
+    private void OnAgregarComidaClicked(object sender, EventArgs e)
+    {
+        // Verificar si ya alcanzó el 100%
+        if (_progresoActual >= 0.99f)
+        {
+            MensajeLbl.Text = "¡Ya alcanzaste el 100% de tus calorías diarias! Reinicia para continuar.";
+            MensajeLbl.IsVisible = true;
+            return;
+        }
+
+        // Aumentar progreso en 20% (0.2)
+        float nuevoProgreso = _progresoActual + 0.2f;
+        _progresoActual = nuevoProgreso > 1f ? 1f : nuevoProgreso;
+
+        // Actualizar la barra de progreso
+        ProgresoBar.Progress = _progresoActual;
+
+        // Actualizar el texto del porcentaje
+        int porcentaje = (int)(_progresoActual * 100);
+        TextoProgresoLbl.Text = $"{porcentaje}% completado";
+
+        // Registrar la comida
+        var registro = new RegistroComida
+        {
+            Nombre = $"Comida {_historialComidas.Count + 1}",
+            Hora = DateTime.Now.ToString("HH:mm"),
+            AporteCalorico = 20
+        };
+        _historialComidas.Add(registro);
+
+        // Ocultar mensaje si ya no está al 100%
+        if (_progresoActual < 0.99f)
+        {
+            MensajeLbl.IsVisible = false;
+        }
+
+        // Verificar si alcanzó el 100%
+        if (_progresoActual >= 0.99f)
+        {
+            MensajeLbl.Text = "🎉 ¡Felicidades! Alcanzaste tu meta calórica diaria 🎉";
+            MensajeLbl.IsVisible = true;
+        }
+    }
+
+    private void OnReiniciarClicked(object sender, EventArgs e)
+    {
+        // Reiniciar progreso
+        _progresoActual = 0f;
+        ProgresoBar.Progress = 0f;
+        TextoProgresoLbl.Text = "0% completado";
+
+        // Limpiar historial
+        _historialComidas.Clear();
+
+        // Ocultar mensaje
+        MensajeLbl.IsVisible = false;
+        MensajeLbl.Text = string.Empty;
+    }
+}
+
+// Modelo para los registros del historial
+public class RegistroComida
+{
+    public string Nombre { get; set; }
+    public string Hora { get; set; }
+    public int AporteCalorico { get; set; }
+}
